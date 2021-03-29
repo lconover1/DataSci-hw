@@ -1,0 +1,173 @@
+---
+title: "Data Science and Programming Assignment 03: Write a Report on Exploring a Dataset"
+author: Laura Conover
+output: 
+  html_document:
+    keep_md: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(gapminder))
+```
+
+__Due February 17, 2020 at 23:59__
+
+
+## Overview
+
+The goal is to manipulate and explore a dataset with the `dplyr` package, 
+complemented by visualizations made with `ggplot2`. You can think of this as a 
+deeper version of Homework 02.
+
+## Assignment
+
+Pick _*three*_ of the tasks below, and, for each selected task, produce: 
+
+- a tibble, using `dplyr` as your data manipulation tool;
+- an accompanying plot of data from the tibble, using `ggplot2` as your visualization tool; and
+- some dialogue about what your tables/figures show (doesn't have to be much).
+  - The idea is to structure your assignment like it's an actual report someone
+    might read.
+
+---
+
+### Task Option 3
+
+Work with `gapminder`. Look at the spread/variability of GDP per capita within 
+the continents.
+  
+_Tibble:_
+  
+```{r echo=FALSE}
+gapminder %>% 
+  group_by(continent) %>% 
+  summarise(Minimum = min(round(gdpPercap, digits =2)),
+            Maximum = max(round(gdpPercap, digits =2)),
+            Range = Maximum-Minimum) %>%
+  knitr::kable()
+```
+
+_Plot:_
+  
+```{r echo=FALSE}
+gapminder %>% 
+  ggplot(aes(gdpPercap)) +
+  geom_density() +
+  facet_wrap(~ continent, nrow = 2, scales = "fixed") 
+```
+
+<!-- Plotting GDP on a log scale might be better -->
+
+_Dialogue:_
+  
+As you can see in the graphs above, every continent has a right-tailed distribution of GDP per capita.  Although most continents have a range across the years between 20,000 and 50,000, Asia has the greatest spread with a range over 113,000.
+
+  
+### Task Option 7
+
+Work with `psych::bfi`. Compute composite scores for the five Big Five scores, 
+including both person-mean scores and person-sd scores. Describe the 
+distributions of the different personality variables.
+ 
+_Tibble:_
+```{r echo=TRUE}
+composite_bfi<-psych::bfi %>% 
+  rownames_to_column(var = "id") %>% 
+  as_tibble() %>%
+  group_by(id) %>% # rowwise() will also work
+  mutate(A_mean = mean(c(A1, A2, A3, A4, A5),na.rm = TRUE), 
+         A_sd = sd(c(A1, A2, A3, A4, A5),na.rm = TRUE), 
+         C_mean = mean(c(C1, C2, C3, C4, C5),na.rm = TRUE), 
+         C_sd = sd(c(C1, C2, C3, C4, C5),na.rm = TRUE), 
+         E_mean = mean(c(E1, E2, E3, E4, E5),na.rm = TRUE), 
+         E_sd = sd(c(E1, E2, E3, E4, E5),na.rm = TRUE), 
+         N_mean = mean(c(N1, N2, N3, N4, N5),na.rm = TRUE), 
+         N_sd = sd(c(N1, N2, N3, N4, N5),na.rm = TRUE), 
+         O_mean = mean(c(O1, O2, O3, O4, O5),na.rm = TRUE), 
+         O_sd = sd(c(O1, O2, O3, O4, O5),na.rm = TRUE)) %>% # Best to break this up into multiple lines like I did here.
+  ungroup() %>% 
+  select(id,gender,education,age,A_mean,A_sd,C_mean,C_sd,E_mean,E_sd,N_mean,N_sd,O_mean,O_sd) %>% 
+  print()
+```
+
+_Plot:_
+```{r echo=FALSE}
+composite_bfi %>% 
+  ggplot() +
+  geom_density(aes(A_mean), color = "red") +
+  geom_density(aes(C_mean), color = "darkblue") +
+  geom_density(aes(E_mean), color = "darkgreen") +
+  geom_density(aes(N_mean), color = "purple") +
+  geom_density(aes(O_mean), color= "goldenrod") +
+  xlab("Composite Score") +
+  ylab("Response Density") +
+  ggtitle("Average Scores on Big 5 Traits") +
+  theme_bw()
+#if you put the name of the color you want in quotes, it won't make a legend.
+# No, that's not the issue here. The problem is that you have color inside aes().
+# Only aesthetics that reference a variable in data should be inside aes().
+# Other aesthetics that are just specified as constants, like here, should be outside
+# aes().
+```
+
+_Dialogue:_
+  
+Although individuals' average scores of three of the Big 5 traits (Openness, Extraversion, and Conscientiousness) have similar peaks and ranges, the average scores for Neuroticism form a much flatter distribution.
+  
+### Task Option 9
+
+Work with `psych::bfi`. Using the composite scores from Task 7, explore how age
+is related to the different personality variables. Does personality appear to 
+change for different ages?
+  
+_Tibble:_
+  
+```{r echo=FALSE}
+composite_bfi %>% 
+  select(id,age,A_mean,A_sd,C_mean,C_sd,E_mean,E_sd,N_mean,N_sd,O_mean,O_sd) %>% 
+  print()
+```
+ 
+_Plot:_
+ 
+```{r echo=FALSE}
+composite_bfi %>% 
+  ggplot() +
+  geom_point(aes(age, A_mean), color = "red") +
+  ylab("Agreeableness Average Score") +
+  xlab("Age")
+composite_bfi %>% 
+  ggplot() +
+  geom_point(aes(age, C_mean), color = "yellow") +
+  ylab("Conscientiousness Average Score") +
+  xlab("Age")
+composite_bfi %>% 
+  ggplot() +
+  geom_point(aes(age, E_mean), color = "green") +
+  ylab("Extraversion Average Score") +
+  xlab("Age")
+composite_bfi %>% 
+  ggplot() +
+  geom_point(aes(age, N_mean), color = "blue") +
+  ylab("Neuroticism Average Score") +
+  xlab("Age")
+composite_bfi %>% 
+  ggplot() +
+  geom_point(aes(age, O_mean), color = "purple") +
+  ylab("Openness Average Score") +
+  xlab("Age")
+```
+
+_Dialogue:_
+  
+As can be seen in the plots above, age is uncorrelated with average score on any of the Big 5 personality traits.
+  
+## Optional Exercise (2%)
+
+Get a table and figure to show side-by-side. 
+[This gist](https://gist.github.com/jennybc/e9e9aba6ba18c72cec26) might get you 
+started.

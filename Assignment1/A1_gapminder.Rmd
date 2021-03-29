@@ -1,0 +1,31 @@
+---
+title: "A1_gapminder"
+author: "Laura Conover"
+output: html_document
+---
+```{r echo=FALSE}
+# install.packages('gapminder')
+# install.packages('DT')
+```
+
+```{r echo=FALSE}
+library(gapminder)
+library(DT)
+```
+
+  
+The "gapminder" data set includes data for `r nrow(gapminder)` countries on variables such as life expectancy (average = `r round(mean(gapminder$lifeExp),digits=2)` years), population size (average = `r round(mean(gapminder$pop),digits=0)` people), and per-capita GDP (average = \$`r round(mean(gapminder$gdpPercap),digits=2)`).  Yes, assumptions were made about units.
+
+The plots below display some interesting relationships between these given variables.  
+  
+
+```{r echo=FALSE}
+plot(log(gapminder$pop),gapminder$lifeExp, type = "p", main = "Relationship between total population and life expectancy", xlab = "Log(Population)", ylab = "Life Expectancy")
+plot(log(gapminder$gdpPercap),gapminder$lifeExp, type = "p", main = "Relationship between per-capita GDP and life expectancy", xlab = "Log(GDP)", ylab = "Life Expectancy")
+```
+
+Presented below is a searchable form of the dataset used.  
+
+```{r echo=FALSE}
+DT::datatable(gapminder)
+```

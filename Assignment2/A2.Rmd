@@ -1,0 +1,184 @@
+---
+title: "Assignment2"
+author: "Laura Conover"
+output: 
+  html_document:
+   keep_md: true
+---
+```{r allow errors, echo = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+ 
+# Objective
+_The goal is to get your feet wet with `ggplot2` and `dplyr` to explore a dataset._
+  
+Setup:
+```{r load packages, warning = FALSE, message = FALSE}
+suppressPackageStartupMessages(library(gapminder))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(tsibble))
+```
+  
+## Exercise 1: Basic `dplyr`
+  
+### 1.1:
+_Use `filter()` to subset the gapminder data to three countries of your choice in the 1970’s_
+
+```{r}
+subminder<-gapminder %>% 
+  filter(year %in% 1970:1979) %>% 
+  filter(country == 'Albania' | country == 'Brazil' | country == 'China')
+subminder %>% 
+    knitr::kable()
+```
+  
+### 1.2
+_Use the pipe operator `%>%` to select “country” and “gdpPercap” from your filtered dataset in 1.1._
+
+```{r}
+subminder %>% 
+  select(country,gdpPercap) %>% 
+  knitr::kable()
+```
+  
+### 1.3
+_Filter `gapminder` to all entries that have experienced a drop in life expectancy. Be sure to include a new variable that’s the increase in life expectancy in your tibble. Hint: you might find the `lag()` or `diff()` functions useful._
+
+```{r}
+gapminder %>% 
+  group_by(country) %>% 
+  arrange(year) %>% 
+  mutate(change_lifeExp = difference(lifeExp, lag = 1)) %>% 
+  filter(change_lifeExp < 0) %>% 
+  DT::datatable()
+#I'm having an issue with `diff()`, because the output of change_lifeExp is 1 value shorter than the rest of the table (there's no value for the first year, I'm assuming, and it doesn't allow N/A).  `difference()` from tsibble overcomes that, but I don't know how to do this the "correct" way.
+```
+<!-- This is fine. Two options for using `diff()` instead: -->
+
+```
+gapminder %>% 
+  group_by(country) %>% 
+  arrange(year) %>% 
+  mutate(change_lifeExp = c(NA, diff(lifeExp, lag = 1))) %>% 
+  filter(change_lifeExp < 0) %>% 
+  DT::datatable()
+```
+
+```
+gapminder %>% 
+  group_by(country) %>% 
+  arrange(year) %>% 
+  mutate(change_lifeExp = if_else(year == 1952, NA, diff(lifeExp, lag = 1))) %>% 
+  filter(change_lifeExp < 0) %>% 
+  DT::datatable()
+```
+  
+### 1.4
+_Choose one of the following:_
+
+[x]Filter `gapminder` so that it shows the max GDP per capita experienced by each country. Hint: you might find the `max()` function useful here.
+  
+[ ]Filter `gapminder` to contain six rows: the rows with the three largest GDP per capita, and the rows with the three smallest GDP per capita. Be sure to not create any intermediate objects when doing this (with, for example, the assignment operator).  Hint: you might find the `sort()` function useful, or perhaps even the `dplyr::slice()` function.
+
+```{r}
+gapminder %>% 
+  group_by(country) %>% 
+  summarise(max(gdpPercap)) %>% 
+  DT::datatable()
+```  
+
+### 1.5
+_Produce a scatterplot of Canada’s life expectancy vs. GDP per capita using `ggplot2`, without defining a new variable. That is, after filtering the `gapminder` data set, pipe it directly into the `ggplot()` function. Ensure GDP per capita is on a log scale._
+
+```{r}
+gapminder %>% 
+  filter(country == 'Canada') %>% 
+  ggplot(aes(gdpPercap,lifeExp)) +
+  geom_point() +
+  scale_x_log10()
+
+```  
+  
+## Exercise 2: Explore individual variables with `dplyr`
+  
+_Pick one categorical variable and one quantitative variable to explore. Answer the following questions in whichever way you think is appropriate, using `dplyr`:_
+
+* What are the possible values (or range, whichever is appropriate) of each variable?
+* What values are typical? What’s the spread? What’s the distribution? Etc., tailored to the variable at hand.
+* Feel free to use summary stats, tables, figures.
+  
+__Dataset: mtcars.  Categorical variable: am.  Quantitative variable: mpg__
+  
+
+There are two possible levels for the categorical variable "am": `r min(mtcars$am)` (`r length(mtcars$am)-sum(mtcars$am)` observations) and `r max(mtcars$am)` (`r sum(mtcars$am)` observations).  This dataset has a total of `r length(mtcars$am)` observations.
+  
+
+``` {r echo = FALSE}
+mtcars %>% 
+  ggplot(aes(factor(am))) +
+  geom_bar() +
+  theme_bw()
+
+```
+
+The quantitative variable "mpg" is slightly more complex.  It ranges from `r min(mtcars$mpg)` to `r max(mtcars$mpg)`, with an average of `r mean(mtcars$mpg)` and a standard deviation of `r sd(mtcars$mpg)`.  A basic idea of the shape of this variable's distribution can be seen below:
+
+```{r echo=FALSE}
+mtcars %>% 
+  ggplot() +
+  geom_histogram(aes(mpg), binwidth = 1.5)
+
+```  
+
+
+## Exercise 3: Explore various plot types 
+_Make two plots that have some value to them. That is, plots that someone might actually consider making for an analysis. Just don’t make the same plots we made in class—feel free to use a data set from the `datasets` R package or any other source if you wish._
+
+1. A scatterplot of two quantitative variables.
+2. One other plot besides a scatterplot.
+
+_You don’t have to use all the data in every plot! It’s fine to filter down to one group or country or a small handful of groups/countries._
+
+The `swiss` dataset population information on 47 provinces of Switzerland in 1888.  By province, variables include the % of males employed in the agricultural sector, the % of army draftees who received the best score on their entrance exam, along with the % of army draftees who had higher education, along with 3 other variables.
+
+An idea of the correlation between the percentage of draftees with the best entrance scores and the percentage of draftees who completed additional education in each province can be gathered from the scatterplot below (note the use of a log scale on the x-axis for clarity).
+
+```{r echo=FALSE}
+swiss %>% 
+  ggplot(aes(Education,Examination)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_x_log10() +
+  theme_bw() +
+  xlab("Received Higher Education (log %)") +
+  ylab("Received Highest Examination (%)")
+```
+
+An overview of the distribution of males employed in the agricultural sector across the different provinces can be seen in the barchart below.
+
+```{r echo=FALSE}
+swiss %>% 
+  ggplot(aes(Agriculture)) +
+  geom_density(bw=5) +
+  xlab ("Males in Agriculture (%)") +
+  theme_light()
+```
+
+
+## Recycling (Optional)
+_Evaluate this code and describe the result. Presumably the analyst’s intent was to get the data for Rwanda and Afghanistan. Did they succeed? Why or why not? If not, what is the correct way to do this?_
+
+`filter(gapminder, country == c("Rwanda", "Afghanistan"))`
+
+The above code does filter out the data for Rwanda and Afghanistan, producing the tibble below that includes all variables for only those two countries.  Another method of reaching this same result is `filter(gapminder, country == "Rwanda" | country == "Afghanistan")`.  Note that neither code saves the filtered dataset.
+
+```{r echo=FALSE}
+gapminder %>%
+  filter(country == c("Rwanda", "Afghanistan")) %>% 
+  DT::datatable()
+```
+
+## Tibble Display (Optional)
+_Present numerical tables in a more attractive form using `knitr::kable()` for small tibbles (say, up to 10 rows), and `DT::datatable()` for larger tibbles._
+
+See tables in other sections

@@ -1,0 +1,111 @@
+---
+title: "Data Science Final project"
+header: "FINAL"
+author: "Laura Conover, University of South Florida, Department of Communication Sciences and Disorders"
+output_format: word_document
+#output_format: html_document
+output:
+  html_document:
+    code_folding: hide
+    keep_md: true
+  word_document: 
+    reference_docx: apa_template.docx
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile, 
+                    encoding = encoding, 
+                    output_format = rmarkdown::yaml_front_matter(inputFile)$output_format,
+                    output_dir = here::here("output",
+                      rmarkdown::yaml_front_matter(inputFile)$output_format
+                      )
+                    )
+  })
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(here)
+library(svglite)
+library(flextable)
+library(papaja)
+#source(here::here("scripts","folder_setup.R"))
+source(here::here("scripts", "load_data.R"))
+source(here::here("scripts", "clean_data.R"))
+source(here::here("scripts", "plot_data.R"))
+```
+
+```{r analysis-preferences, echo=FALSE}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+\newpage
+# Abstract
+  Human speech sounds are full of variation.  Some of this variation is phonemic - to English speakers, the difference between the unvoiced 'p' sound in 'pug' and the voiced 'b' sound in 'bug' completely changes the meaning of the resulting word.  On the other hand, not all variation within speech sounds carry meaning, such as the contrast between the aspirated 'p' sound in 'pot' and the unaspirated 'p' sound in 'spot' for English speakers.  Although the type of contrast that is considered important varies between languages (aspiration contrasts are meaningful in languages such as Hindu, Thai, and Punjabi), it is a general rule that adults have a difficult time perceiving non-phonemic contrasts.  It is possible, however, that certain acoustic markers may interact with individual listener characteristics to make some non-phonemic contrasts more easily perceptible for some listeners than others.  The following study examines such interactions.
+
+ 
+# Acknowledgements
+Much thanks to Richard Layton for his [tutorial](https://rmarkdown.rstudio.com/articles_docx.html) on a work-around for formatting when the `papaja` package was too frustrating.
+ 
+\newpage
+# Introduction (and disclaimer)
+The data selected comes from a study of individuals' perceptions of both spontaneous and volitional laughter produced by young adult female American English speakers. The discrepency between this description and what was mentioned in the abstract is obvious.  Clearly, this is not at all the data set that will be used in the final study.  However, the structure of the data and variables are identical to the structure of the study's data: responses to a 2A-FC test, categorical listener variables, and continuous acoustic variables.  Therefore, this data is a good stand-in until actual data collection is complete.  Similarly, not all of the descriptive text is finalized.  I hope that what is written here and in the folder's README file will provide sufficient explanation.
+
+# Methods
+The original data includes two csv files: one detailing information on the acoustic features of the laugh stimuli (including spontaneous/volitional condition and duration, voicing, pitch, and intensity measures), and the other detailing information on the listeners and perceptions (including basic demographic data such as gender, country of origin, English fluency, and education, as well as whether each stimulus was perceived as volitional or spontaneous). This dataset has no missing values; it is possible that any cases with missing values were deleted listwise prior to publication.  Even so, these data files are somewhat messy.  Participant IDs were reused at different sites, and stimulus files were renamed between analyses.  Additionally, there are a number of variables that are not relevant to the current project.  As such, the data were slightly cleaned and reorganized prior to analysis. 
+
+Selected variables for this analysis include: Laugh condition (spontaneous or volitional), accuracy of listener's judgement on a trial, total laugh duration in seconds, the average pitch of the laugh in logHz, and the listener's country of origin.
+
+
+## Data analysis
+
+The average accuracy by listener's country of origin is presented in Table 1 below.  Although the scores do vary from country to country, the range of scores only reaches from `r min(country_accuracy$accuracy)` to `r max(country_accuracy$accuracy)`, with an average accuracy of `r mean(country_accuracy$accuracy)`.  
+
+```{r, echo=FALSE, results='asis'}
+country_accuracy %>% 
+  flextable() %>% 
+  set_caption("Table 1. The average hit rate of laugh identifications by listener's country of origin") %>% 
+  autofit  
+```
+  
+
+The influence of acoustic features on hit rates - or, rather, the apparent lack thereof - can be seen in Figure 1:
+
+```{r, echo=FALSE}
+laugh_plot
+```
+
+
+
+```{r, echo=FALSE}
+mod_condition_acoustic <- glm(formula = factorCondition ~ Pitch*Duration, data = by_laugh, family = binomial(link = "logit"))
+#Note that "Volitional" laughter is coded as 0, "Spontaneous" laughter is coded as 1.
+
+mod_hitrate_country <- lm(hit_rate ~ country, data = by_subject)
+
+```
+
+Note that, in Table 2 below, there is no significant difference in either pitch or duration, or their interaction, between the two stimulus conditions.  That is, there is no acoustic difference between spontaneous and volitional laughter within these two measures. 
+
+```{r, echo = FALSE}
+flextable(papaja::apa_print(mod_condition_acoustic)$table)  %>% 
+  set_caption("Table 2. Model of Laugh Condition by Pitch and Duration") %>% 
+  autofit  
+```
+  
+ 
+However, the human perceptual system is modified by more factors than just acoustic information.  As seen in Table 3 below, the listener's country of origin does impact whether or not the listener can correctly perceive a stimulus as spontaneous or volitional, `r papaja::apa_print(mod_hitrate_country)$full_result$modelfit`.
+
+
+```{r, echo=FALSE}
+flextable(papaja::apa_print(mod_hitrate_country)$table)  %>% 
+  set_caption("Table 3.  Analysis of Variance of Hit Rate by Country") %>% 
+  autofit
+```
+  
+\newpage
+
+# Session Information
+```{r}
+devtools::session_info()
+```

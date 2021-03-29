@@ -1,0 +1,131 @@
+---
+title: 'Data Science and Programming Assignment 04: Tidy data and joins'
+author: "Laura Conover"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r allow errors, echo = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+
+## Objective
+
+The goal of this homework is to solidify your data wrangling skills by working 
+some realistic problems in the grey area between data aggregation and data 
+reshaping.
+
+Load required packages:
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(gapminder))
+```
+
+## Exercise 1: Univariate Data Reshaping (30%)
+
+### Univariate Option 1
+
+_You are expected to use `pivot_wider()` and `pivot_longer()` for reshaping, and `ggplot2` for the plot_
+  
+_1. Make a tibble with one row per year, and columns for life expectancy for two or more countries_
+
+Life Expectancy for Ireland and the UK from 1952 to 2007
+``` {r}
+ex1 <- gapminder %>% 
+   filter(country %in% c('Ireland', 'United Kingdom')) %>% 
+   pivot_wider(id_cols = year, names_from = country, values_from = lifeExp) %>%
+   print
+```
+_2. Take advantage of this new data shape to scatterplot life expectancy for one country against that of another._
+
+```{r}
+ex1 %>% 
+   ggplot(aes(Ireland,`United Kingdom`)) +
+   geom_point() +
+   geom_smooth(method = 'lm') +
+   ggtitle("Correlated Life Expectancy in Ireland and the UK from 1952 to 2007")
+```
+
+_3. Re-lengthen the data._
+```{r}
+ex1 %>% 
+   pivot_longer(cols = c('Ireland', 'United Kingdom'), names_to = 'country', values_to = 'life expectancy') %>% 
+   DT::datatable()
+```
+
+## Exercise 2: Multivariate Data Reshaping (30%)
+
+_You are expected to use `pivot_wider()` and `pivot_longer()` for reshaping._
+
+### Multivariate Option 1
+
+*1. Make a tibble with _one row per year_, and _columns_ for life expectancy _and_ GDP per capita for two or more countries.*
+
+Life Expectancy and GDP for Ireland and the UK from 1952 to 2007
+```{r}
+ex2 <- gapminder %>% 
+   filter(country %in% c('Ireland', 'United Kingdom')) %>% 
+   pivot_wider(id_cols = year, names_from = country, values_from = c(lifeExp,gdpPercap)) %>%
+   print
+```
+
+_2. Print this table in a pretty format, using either `knitr::kable()` or `DT::datatable()` depending on the number of rows of data._
+
+```{r}
+DT::datatable(ex2)
+```
+
+_3. Re-lengthen the data._
+```{r}
+ex2 %>% 
+   pivot_longer(cols = -year, names_to = c(".value","country"), names_sep = '_') %>% 
+   DT::datatable()
+```
+
+
+## Exercise 3: Table Joins (30%)
+
+_Read in the made-up wedding guestlist and email addresses using the following lines.  Then, complete the following tasks using the tidyverse (`tidyr`, `dplyr`, ...)._
+
+``` {r}
+guest <- read_csv("https://raw.githubusercontent.com/USF-Psych-DataSci/Classroom/master/data/wedding/attend.csv")
+email <- read_csv("https://raw.githubusercontent.com/USF-Psych-DataSci/Classroom/master/data/wedding/emails.csv")
+```
+
+
+_1.For each guest in the guestlist (`guest` tibble), add a column for email address, which can be found in the `email` tibble._
+
+List each person individually by name in the 'email' tibble:
+```{r}
+email_sep <- email %>% 
+   separate_rows(guest, sep = ", ") %>% 
+   rename(name = guest)
+```
+
+Combine the two tibbles:
+```{r}
+guest %>% 
+   left_join(email_sep, by = 'name') %>% 
+   DT::datatable()
+```
+
+_2.Who do we have emails for, yet are not on the guestlist?_
+``` {r}
+email_sep %>% 
+   anti_join(guest, by = 'name') %>% 
+   knitr::kable()
+```
+
+
+_3.Make a guestlist that includes everyone we have emails for (in addition to those on the original guestlist)._
+```{r}
+guest %>% 
+   full_join(email_sep, by = 'name') %>% 
+   DT::datatable()
+#note that this list is not saved (since this is the last step in the assignment).  In a practical situation, it would likely be assigned to a new variable
+```

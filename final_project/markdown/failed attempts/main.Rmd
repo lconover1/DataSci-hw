@@ -1,0 +1,75 @@
+---
+title: "Final project"
+author: "Laura Conover"
+output_format: html_document
+output:
+  html_document:
+    code_folding: hide
+    keep_md: true
+  word_document: default
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile, 
+                    encoding = encoding, 
+                    output_format = rmarkdown::yaml_front_matter(inputFile)$output_format,
+                    output_dir = here::here("output",
+                      rmarkdown::yaml_front_matter(inputFile)$output_format
+                      )
+                    )
+  })
+---
+
+<!-- See above with the 'output_format' and 'knit' arguments for how to output
+     your knitted document to a subfolder in `output` instead of in `markdown` -->
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### I'm not entirely sure, but I feel like this document is now mostly unnecessary, as the vast majority of the needed information is now in the "writeup" doc.  But I also do not want to delete it just in case.
+
+Required packages:
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(here))
+suppressPackageStartupMessages(library(svglite))
+```
+
+Folder set-up if required:
+```{r}
+#source(here::here("scripts","folder_setup.R"))
+```
+
+Download data from the Harvard dataverse and load into R:
+```{r}
+source(here::here("scripts", "load_data.R"))
+```
+
+_A description of the data can be found in this project's README file._
+_These datasets are somewhat messy.  Participant ids were reused at different sites, and stimulus files were renamed between analyses.  Additionally, there are a number of variables that are not relevant to the current project._
+
+Create new dataset with only the relevant variables and save it as a file:
+```{r}
+source(here::here("scripts", "clean_data.R"))
+```
+
+Display data.
+```{r}
+DT::datatable(by_subject)
+DT::datatable(by_laugh)
+```
+
+Create and save plots.
+
+```{r}
+source(here::here("scripts", "plot_data.R"))
+
+laugh_plot
+subject_plot
+```
+
+
+```{r, echo=TRUE}
+devtools::session_info()
+```
+
